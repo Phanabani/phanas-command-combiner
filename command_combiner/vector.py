@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import math
-from numbers import Real
 from typing import Union
 
 __all__ = ['Vector3']
 
 
 class Vector3:
-    def __init__(self, x: Real = 0, y: Real = 0, z: Real = 0):
+    def __init__(self, x: float = 0, y: float = 0, z: float = 0):
         self.x = x
         self.y = y
         self.z = z
@@ -25,7 +24,7 @@ class Vector3:
             and math.isclose(self.z, other.z, rel_tol=rel_tol, abs_tol=abs_tol)
         )
 
-    def set(self, x: Real, y: Real, z: Real):
+    def set(self, x: float, y: float, z: float):
         self.x = x
         self.y = y
         self.z = z
@@ -48,13 +47,13 @@ class Vector3:
         self.z -= other.z
         return self
 
-    def __mul__(self, other: Union[Real, Vector3]):
+    def __mul__(self, other: Union[float, Vector3]):
         try:
             return Vector3(self.x * other.x, self.y * other.y, self.z * other.z)
         except AttributeError:
             return Vector3(self.x * other, self.y * other, self.z * other)
 
-    def __imul__(self, other: Union[Real, Vector3]):
+    def __imul__(self, other: Union[float, Vector3]):
         try:
             x = other.x
             y = other.y
@@ -66,13 +65,13 @@ class Vector3:
         self.z *= z
         return self
 
-    def __div__(self, other: Union[Real, Vector3]):
+    def __div__(self, other: Union[float, Vector3]):
         try:
             return Vector3(self.x / other.x, self.y / other.y, self.z / other.z)
         except AttributeError:
             return Vector3(self.x / other, self.y / other, self.z / other)
 
-    def __idiv__(self, other: Union[Real, Vector3]):
+    def __idiv__(self, other: Union[float, Vector3]):
         try:
             x = other.x
             y = other.y
