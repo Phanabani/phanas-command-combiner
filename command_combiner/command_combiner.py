@@ -96,7 +96,7 @@ class CommandCombiner:
         )
 
         commands = ['fill ~1 ~-3 ~1 ~2 ~-3 ~2 quartz_block']
-        commands.append('kill @e[type=command_block_minecart,distance=..2]')
+        commands.append('kill @e[type=command_block_minecart,distance=..1]')
         minecarts = [NBTUtils.cmd_minecart(repr(cmd)) for cmd in commands]
 
         for minecarts_slice in (
