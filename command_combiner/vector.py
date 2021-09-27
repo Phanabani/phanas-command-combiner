@@ -65,13 +65,13 @@ class Vector3:
         self.z *= z
         return self
 
-    def __div__(self, other: Union[float, Vector3]):
+    def __truediv__(self, other: Union[float, Vector3]):
         try:
             return Vector3(self.x / other.x, self.y / other.y, self.z / other.z)
         except AttributeError:
             return Vector3(self.x / other, self.y / other, self.z / other)
 
-    def __idiv__(self, other: Union[float, Vector3]):
+    def __itruediv__(self, other: Union[float, Vector3]):
         try:
             x = other.x
             y = other.y
