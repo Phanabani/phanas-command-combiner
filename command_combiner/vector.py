@@ -8,8 +8,6 @@ __all__ = ['Vector3']
 
 class Vector3:
 
-    _zero = None
-
     def __init__(self, x: float = 0, y: Optional[float] = None, z: Optional[float] = None):
         if y is None and z is None:
             y = z = x
@@ -89,12 +87,4 @@ class Vector3:
         return self
 
     def __bool__(self):
-        return not self == Vector3.zero
-
-    # noinspection PyPropertyDefinition
-    @classmethod
-    @property
-    def zero(cls) -> Vector3:
-        if cls._zero is None:
-            cls._zero = cls()
-        return cls._zero
+        return not self == Vector3()
