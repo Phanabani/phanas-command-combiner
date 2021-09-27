@@ -27,12 +27,13 @@ def back_and_forth(t: int, offset: int):
 
 def space_filling_curve(t: int, dimensions: Vector3):
     return Vector3(
-        back_and_forth(t, dimensions.x-1),
+        back_and_forth(t, int(dimensions.x) - 1),
         back_and_forth(
-            floor(t / (dimensions.x-1 + 1)), dimensions.z-1
+            floor(t / ((dimensions.x-1 + 1) * (dimensions.z-1 + 1))),
+            int(dimensions.y) - 1
         ),
         back_and_forth(
-            floor(t / ((dimensions.x-1 + 1) * (dimensions.z-1 + 1))), dimensions.y-1
+            floor(t / (dimensions.x-1 + 1)), int(dimensions.z) - 1
         )
     )
 
