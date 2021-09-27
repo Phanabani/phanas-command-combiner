@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import math
-from typing import Union
+from typing import Optional, Union
 
 __all__ = ['Vector3']
 
 
 class Vector3:
-    def __init__(self, x: float = 0, y: float = 0, z: float = 0):
+
+    _zero = None
+
+    def __init__(self, x: float = 0, y: Optional[float] = None, z: Optional[float] = None):
+        if y is None and z is None:
+            y = z = x
         self.x = x
         self.y = y
         self.z = z
@@ -82,3 +87,14 @@ class Vector3:
         self.y /= y
         self.z /= z
         return self
+
+    def __bool__(self):
+        return not self == Vector3.zero
+
+    # noinspection PyPropertyDefinition
+    @classmethod
+    @property
+    def zero(cls) -> Vector3:
+        if cls._zero is None:
+            cls._zero = cls()
+        return cls._zero
