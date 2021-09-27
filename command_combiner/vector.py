@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import math
 from numbers import Real
 from typing import Union
 
@@ -13,6 +15,15 @@ class Vector3:
 
     def __str__(self):
         return f"({self.x}, {self.y}, {self.z})"
+
+    def __eq__(self, other: Vector3):
+        rel_tol = 1e-9
+        abs_tol = 1e-8
+        return (
+            math.isclose(self.x, other.x, rel_tol=rel_tol, abs_tol=abs_tol)
+            and math.isclose(self.y, other.y, rel_tol=rel_tol, abs_tol=abs_tol)
+            and math.isclose(self.z, other.z, rel_tol=rel_tol, abs_tol=abs_tol)
+        )
 
     def set(self, x: Real, y: Real, z: Real):
         self.x = x
