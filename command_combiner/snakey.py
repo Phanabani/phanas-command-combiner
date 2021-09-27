@@ -46,10 +46,11 @@ class Snakey:
                 ceil(volume_target / ((dimensions.x + 1) * (dimensions.z + 1)))
             )
         self._dimensions = dimensions
-        self._pos = Vector3()
-        self._direction = Vector3(1, 0, 0)
         self._index = 0
-        self._volume = (dimensions.x + 1) * (dimensions.y + 1) * (dimensions.z + 1)
+        self._pos = Vector3()
+        self._last_pos: Optional[Vector3] = None
+        self._direction: Optional[Vector3] = None
+        self._volume = int((dimensions.x + 1) * (dimensions.y + 1) * (dimensions.z + 1))
 
     @property
     def dimensions(self) -> Vector3:
@@ -60,16 +61,12 @@ class Snakey:
         return self._pos
 
     @property
-    def direction(self) -> Vector3:
+    def direction(self) -> Optional[Vector3]:
         return self._direction
 
     @property
     def index(self) -> int:
         return self._index
-
-    @index.setter
-    def index(self, new_value: int):
-        self._index = new_value
 
     @property
     def volume(self) -> int:
@@ -78,13 +75,22 @@ class Snakey:
     def __len__(self):
         return self.volume
 
-    def __next__(self) -> Vector3:
+    def __iter__(self):
+        return self
+
+    def __next__(self) -> tuple[Vector3, Optional[Vector3]]:
+        """
+        :return: current position and direction
+        """
         if self._index >= len(self):
             raise StopIteration
 
-        pos = self[self._index]
+        self._pos = self[self._index]
+        if self._last_pos is not None:
+            self._direction = self._pos - self._last_pos
         self._index += 1
-        return pos
+        self._last_pos = self._pos
+        return self._pos, self._direction
 
     def __getitem__(self, index: int) -> Vector3:
         if index >= len(self):
@@ -92,4 +98,7 @@ class Snakey:
         return space_filling_curve(index, self._dimensions)
 
     def reset(self):
-        self.index = 0
+        self._index = 0
+        self._pos = Vector3()
+        self._last_pos = None
+        self._direction = None
