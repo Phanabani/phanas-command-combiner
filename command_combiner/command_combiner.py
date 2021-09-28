@@ -71,6 +71,8 @@ class NBTUtils:
 
 class CommandCombiner:
 
+    origin = Vector3(1, -3, 1)
+
     def __init__(
             self, commands: list[str], dimensions: Optional[Vector3] = None
     ):
@@ -102,7 +104,8 @@ class CommandCombiner:
                 len(summon_cmd) + len(self.nbt_encoder.encode(falling_blocks[0])) - 2
         )
 
-        commands = self.command_blocks()
+        commands = self.place_command_blocks()
+        commands.extend(self.format_commands())
         commands.append('setblock ~ ~-2 ~ command_block{auto:1b,Command:"fill ~ ~ ~ ~ ~2 ~ air"}')
         commands.append('kill @e[type=falling_block,distance=..1]')
         commands.append('kill @e[type=command_block_minecart,distance=..1]')
@@ -115,13 +118,13 @@ class CommandCombiner:
             tag = self.nbt_encoder.encode(falling_blocks[0])
             yield f"{summon_cmd}{tag}"
 
-    def command_blocks(self) -> list[str]:
+    def place_command_blocks(self) -> list[str]:
         commands = []
         snakey = Snakey(self.dimensions, len(self.commands))
-        origin = Vector3(1, -3, 1)
         # We leave the y axis unbounded and Snakey calculates it
         dims = snakey.dimensions
-        offset_dims = origin + dims
+        offset_dims = self.origin + dims
+        block = "chain_command_block[facing=%s]{auto:1b,TrackOutput:0b}"
 
         facing_x = 1
         facing_z = 1
@@ -136,27 +139,24 @@ class CommandCombiner:
             pos = None
             # Place rows on the x axis with alternating directions
             for z in z_range:
-                pos = origin + Vector3(0, y, z)
-                block = "chain_command_block[facing=%s]{{auto:1b,TrackOutput:0b}}"
+                pos = self.origin + Vector3(0, y, z)
                 if facing_x == 1:
                     row_end_pos = int(offset_dims.x) - 1
                 else:
-                    row_end_pos = origin.x
+                    row_end_pos = self.origin.x
 
                 # Place row
                 commands.append(
                     f"fill "
                     f"~{pos.x:.0f} ~{pos.y:.0f} ~{pos.z:.0f} "
                     f"~{dims.x:.0f} ~{pos.y:.0f} ~{pos.z:.0f} "
-                    f"{block % ('east' if facing_x==1 else 'west')} "
-                    f"replace"
+                    f"{block % ('east' if facing_x==1 else 'west')}"
                 )
                 # Replace row end block which turns to the new row
                 commands.append(
                     f"setblock "
                     f"~{row_end_pos} ~{pos.y:.0f} ~{pos.z:.0f} "
-                    f"piston[facing={'south' if facing_z==1 else 'north'}] "
-                    f"replace"
+                    f"{block % ('south' if facing_z==1 else 'north')}"
                 )
 
                 facing_x *= -1
@@ -166,11 +166,24 @@ class CommandCombiner:
             commands[-1] = (
                 f"setblock "
                 f"~{row_end_pos} ~{pos.y:.0f} ~{pos.z:.0f} "
-                f"piston[facing=up] replace"
+                f"{block % 'up'}"
             )
 
             facing_z *= -1
 
+        return commands
+
+    def format_commands(self) -> list[str]:
+        snakey = Snakey(self.dimensions, len(self.commands))
+        commands = []
+        for pos_and_facing, cmd in zip(snakey, self.commands):
+            pos, _ = pos_and_facing
+            pos += self.origin
+            commands.append(
+                f"data modify block "
+                f"~{pos.x:.0f} ~{pos.y:.0f} ~{pos.z:.0f} "
+                f"Command set value {cmd!r}"
+            )
         return commands
 
 
