@@ -1,5 +1,4 @@
 from collections.abc import Generator
-from queue import Queue
 import re
 
 from typing import NoReturn, Optional
@@ -117,54 +116,55 @@ class CommandCombiner:
             yield f"{summon_cmd}{tag}"
 
     def command_blocks(self) -> list[str]:
-        snakey = Snakey(Vector3(2, 2, 2), len(self.commands))
         commands = []
+        snakey = Snakey(self.dimensions, len(self.commands))
         origin = Vector3(1, -3, 1)
+        dims = snakey.dimensions
+        offset_dims = origin + dims
 
-        last_direction = None
-        last_positions: Queue[Vector3] = Queue(2)
-        fill_start_pos: Vector3 = Vector3()
-        for pos, direction in snakey:
-            if (
-                    last_direction is not None
-                    and direction is not None
-                    and direction != last_direction
-            ):
-                start_pos = origin + fill_start_pos
-                end_pos = last_positions.get()
-                fill_start_pos = end_pos
-                end_pos += origin
-                cardinal = self.get_cardinal(last_direction)
+        facing_x = 1
+        facing_z = 1
+        row_end_pos = None
+        for y in range(int(dims.y)):
+            if facing_z == 1:
+                z_range = range(int(dims.z))
+            else:
+                z_range = range(int(dims.z) - 1, -1, -1)
+
+            pos = None
+            for z in z_range:
+                pos = origin + Vector3(0, y, z)
+                block = "chain_command_block[facing=%s]{{auto:1b,TrackOutput:0b}}"
+                if facing_x == 1:
+                    row_end_pos = int(offset_dims.x) - 1
+                else:
+                    row_end_pos = origin.x
+
                 commands.append(
                     f"fill "
-                    f"~{start_pos.x} ~{start_pos.y} ~{start_pos.z} "
-                    f"~{end_pos.x} ~{end_pos.y} ~{end_pos.z} "
-                    # f"chain_command_block[facing={cardinal}]{{auto:1b,TrackOutput:0b}} "
-                    f"piston[facing={cardinal}] "
-                    f"keep"
+                    f"~{pos.x:.0f} ~{pos.y:.0f} ~{pos.z:.0f} "
+                    f"~{dims.x:.0f} ~{pos.y:.0f} ~{pos.z:.0f} "
+                    f"{block % ('east' if facing_x==1 else 'west')} "
+                    f"replace"
+                )
+                commands.append(
+                    f"setblock "
+                    f"~{row_end_pos} ~{pos.y:.0f} ~{pos.z:.0f} "
+                    f"piston[facing={'south' if facing_z==1 else 'north'}] "
+                    f"replace"
                 )
 
-            if direction is not None:
-                last_direction = direction
-            last_positions.put(pos)
+                facing_x *= -1
+
+            commands[-1] = (
+                f"setblock "
+                f"~{row_end_pos} ~{pos.y:.0f} ~{pos.z:.0f} "
+                f"piston[facing=up] replace"
+            )
+
+            facing_z *= -1
 
         return commands
-
-    @staticmethod
-    def get_cardinal(direction: Vector3) -> Optional[str]:
-        if direction.x > 0:
-            return 'east'
-        if direction.x < 0:
-            return 'west'
-        if direction.z > 0:
-            return 'south'
-        if direction.z < 0:
-            return 'north'
-        if direction.y > 0:
-            return 'up'
-        if direction.y < 0:
-            return 'down'
-        return None
 
 
 if __name__ == '__main__':
