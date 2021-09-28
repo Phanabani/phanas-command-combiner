@@ -3,9 +3,9 @@ import re
 
 from typing import NoReturn, Optional
 
-from nbt_encoder import NBTEncoder
-from snakey import Snakey
-from vector import Vector3
+from .nbt_encoder import NBTEncoder
+from .snakey import Snakey
+from .vector import Vector3
 
 COMMAND_BLOCK_TEXT_LIMIT = 32500
 # This lookahead thing using tmp is an emulation of an atomic group

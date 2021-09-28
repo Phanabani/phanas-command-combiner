@@ -5,7 +5,7 @@ from math import ceil, floor
 
 from typing import Optional
 
-from vector import Vector3
+from .vector import Vector3
 
 __all__ = [
     'Snakey'
