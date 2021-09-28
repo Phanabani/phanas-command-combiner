@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from copy import copy
 from math import ceil, floor
 
 from typing import Optional
@@ -41,6 +43,7 @@ def space_filling_curve(t: int, dimensions: Vector3):
 class Snakey:
 
     def __init__(self, dimensions: Vector3, volume_target: Optional[int] = None):
+        dimensions = copy(dimensions)
         if dimensions.y == -1 and volume_target is not None:
             dimensions.y = (
                 ceil(volume_target / ((dimensions.x + 1) * (dimensions.z + 1)))
