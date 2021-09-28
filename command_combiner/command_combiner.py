@@ -119,12 +119,14 @@ class CommandCombiner:
         commands = []
         snakey = Snakey(self.dimensions, len(self.commands))
         origin = Vector3(1, -3, 1)
+        # We leave the y axis unbounded and Snakey calculates it
         dims = snakey.dimensions
         offset_dims = origin + dims
 
         facing_x = 1
         facing_z = 1
         row_end_pos = None
+        # Place layers of command blocks
         for y in range(int(dims.y)):
             if facing_z == 1:
                 z_range = range(int(dims.z))
@@ -132,6 +134,7 @@ class CommandCombiner:
                 z_range = range(int(dims.z) - 1, -1, -1)
 
             pos = None
+            # Place rows on the x axis with alternating directions
             for z in z_range:
                 pos = origin + Vector3(0, y, z)
                 block = "chain_command_block[facing=%s]{{auto:1b,TrackOutput:0b}}"
@@ -140,6 +143,7 @@ class CommandCombiner:
                 else:
                     row_end_pos = origin.x
 
+                # Place row
                 commands.append(
                     f"fill "
                     f"~{pos.x:.0f} ~{pos.y:.0f} ~{pos.z:.0f} "
@@ -147,6 +151,7 @@ class CommandCombiner:
                     f"{block % ('east' if facing_x==1 else 'west')} "
                     f"replace"
                 )
+                # Replace row end block which turns to the new row
                 commands.append(
                     f"setblock "
                     f"~{row_end_pos} ~{pos.y:.0f} ~{pos.z:.0f} "
@@ -156,6 +161,8 @@ class CommandCombiner:
 
                 facing_x *= -1
 
+            # Replace the last row's end block with one that points up to the
+            # next layer
             commands[-1] = (
                 f"setblock "
                 f"~{row_end_pos} ~{pos.y:.0f} ~{pos.z:.0f} "
