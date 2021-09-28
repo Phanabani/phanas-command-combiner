@@ -1,5 +1,4 @@
 from collections.abc import Generator
-import re
 
 from typing import NoReturn, Optional
 
@@ -8,10 +7,6 @@ from .snakey import Snakey
 from .vector import Vector3
 
 COMMAND_BLOCK_TEXT_LIMIT = 32500
-# This lookahead thing using tmp is an emulation of an atomic group
-command_pattern = re.compile(
-    r'^(?=(?P<tmp>\s*))(?P=tmp)(?!#)\s*(?P<command>\S.*)$'
-)
 
 
 class NBTUtils:
@@ -198,32 +193,3 @@ class CommandCombiner:
                 f"Command set value {cmd!r}"
             )
         return commands
-
-
-if __name__ == '__main__':
-    from pathlib import Path
-    import sys
-
-    def main():
-        if len(sys.argv) != 3:
-            return
-
-        commands_file = Path(sys.argv[1])
-        out_file = Path(sys.argv[2])
-        if not commands_file.exists():
-            return
-
-        cmds = []
-        with commands_file.open() as f:
-            for line in f.readlines():
-                match = command_pattern.match(line)
-                if match:
-                    cmds.append(match['command'])
-
-        combiner = CommandCombiner(cmds, Vector3(8, -1, 8))
-        with out_file.open('wt') as f:
-            for combined in combiner.combine():
-                f.write(combined)
-                f.write('\n')
-
-    main()
