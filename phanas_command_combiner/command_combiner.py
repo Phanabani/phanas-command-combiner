@@ -124,6 +124,7 @@ class CommandCombiner:
         place_cmd_blocks = self.place_command_blocks()
         main_commands = self.format_commands()
         cleanup_cmds = [
+            'data modify block ~ ~-3 ~ Command set value ""',
             'setblock ~ ~-2 ~ command_block{auto:1b,Command:"fill ~ ~ ~ ~ ~2 ~ air"}',
             'kill @e[type=falling_block,distance=..1]',
             'kill @e[type=command_block_minecart,distance=..1]'
