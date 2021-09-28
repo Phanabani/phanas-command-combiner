@@ -18,6 +18,9 @@ class Vector3:
     def __str__(self):
         return f"({self.x}, {self.y}, {self.z})"
 
+    def __repr__(self):
+        return f"Vector3({self.x}, {self.y}, {self.z})"
+
     def __eq__(self, other: Vector3):
         rel_tol = 1e-9
         abs_tol = 1e-8
