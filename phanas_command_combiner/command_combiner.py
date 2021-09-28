@@ -84,13 +84,31 @@ class CommandCombiner:
     def combine(self) -> Generator[str]:
         summon_cmd = 'summon falling_block ~ ~1 ~ '
 
+        # This is soooo weird right? The old method of just stacking the blocks
+        # directly on top of each other doesn't seem to work anymore in 1.17.
+        # I found through lots of experimentation that this sequence works.
+        # You need buffer blocks between the actual blocks, because these will
+        # break instead of placing down.
+        #
+        # It gets even weirder after the redstone block. I found that you have
+        # to buffer the buffer block with a DIFFERENT buffer block. I tried
+        # lots of combinations and this was the only thing that's actually
+        # worked.
+        #
+        # Also FYI I used fire/soul fire here because they don't have an
+        # item type associated with them, so them don't drop an item unlike most
+        # other blocks I tried using as buffers (nether/end portals also work).
+        # I also have to kill a falling block at the end because one of the
+        # fires apparently DOES place after the other commands run and the
+        # setup is deleted. I know it looks insane... but also kind of
+        # captivating visually!!
         falling_blocks = [
             NBTUtils.falling_block('stone', with_id=False),
             NBTUtils.falling_block('fire'),
             NBTUtils.falling_block('fire'),
             NBTUtils.falling_block('redstone_block'),
             NBTUtils.falling_block('fire'),
-            NBTUtils.falling_block('nether_portal'),
+            NBTUtils.falling_block('soul_fire'),
             NBTUtils.falling_block('fire'),
             NBTUtils.falling_block('fire'),
             NBTUtils.falling_block('activator_rail'),
