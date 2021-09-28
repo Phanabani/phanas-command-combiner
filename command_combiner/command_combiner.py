@@ -1,9 +1,12 @@
 from collections.abc import Generator
+from queue import Queue
 import re
 
 from typing import NoReturn, Optional
 
 from nbt_encoder import NBTEncoder
+from snakey import Snakey
+from vector import Vector3
 
 COMMAND_BLOCK_TEXT_LIMIT = 32500
 # This lookahead thing using tmp is an emulation of an atomic group
@@ -69,9 +72,14 @@ class NBTUtils:
 
 class CommandCombiner:
 
-    def __init__(self, commands: list[str]):
+    def __init__(
+            self, commands: list[str], dimensions: Optional[Vector3] = None
+    ):
         self.commands = commands
         self.nbt_encoder = NBTEncoder(quote_strings=False)
+        if dimensions is None:
+            dimensions = Vector3(8, -1, 8)
+        self.dimensions = dimensions
 
     def combine(self) -> Generator[str]:
         summon_cmd = 'summon falling_block ~ ~1 ~ '
@@ -95,7 +103,9 @@ class CommandCombiner:
                 len(summon_cmd) + len(self.nbt_encoder.encode(falling_blocks[0])) - 2
         )
 
-        commands = ['fill ~1 ~-3 ~1 ~2 ~-3 ~2 quartz_block']
+        commands = self.command_blocks()
+        commands.append('setblock ~ ~-2 ~ command_block{auto:1b,Command:"fill ~ ~ ~ ~ ~2 ~ air"}')
+        commands.append('kill @e[type=falling_block,distance=..1]')
         commands.append('kill @e[type=command_block_minecart,distance=..1]')
         minecarts = [NBTUtils.cmd_minecart(repr(cmd)) for cmd in commands]
 
@@ -105,6 +115,56 @@ class CommandCombiner:
             falling_blocks[-1]['Passengers'] = minecarts_slice
             tag = self.nbt_encoder.encode(falling_blocks[0])
             yield f"{summon_cmd}{tag}"
+
+    def command_blocks(self) -> list[str]:
+        snakey = Snakey(Vector3(2, 2, 2), len(self.commands))
+        commands = []
+        origin = Vector3(1, -3, 1)
+
+        last_direction = None
+        last_positions: Queue[Vector3] = Queue(2)
+        fill_start_pos: Vector3 = Vector3()
+        for pos, direction in snakey:
+            if (
+                    last_direction is not None
+                    and direction is not None
+                    and direction != last_direction
+            ):
+                start_pos = origin + fill_start_pos
+                end_pos = last_positions.get()
+                fill_start_pos = end_pos
+                end_pos += origin
+                cardinal = self.get_cardinal(last_direction)
+                commands.append(
+                    f"fill "
+                    f"~{start_pos.x} ~{start_pos.y} ~{start_pos.z} "
+                    f"~{end_pos.x} ~{end_pos.y} ~{end_pos.z} "
+                    # f"chain_command_block[facing={cardinal}]{{auto:1b,TrackOutput:0b}} "
+                    f"piston[facing={cardinal}] "
+                    f"keep"
+                )
+
+            if direction is not None:
+                last_direction = direction
+            last_positions.put(pos)
+
+        return commands
+
+    @staticmethod
+    def get_cardinal(direction: Vector3) -> Optional[str]:
+        if direction.x > 0:
+            return 'east'
+        if direction.x < 0:
+            return 'west'
+        if direction.z > 0:
+            return 'south'
+        if direction.z < 0:
+            return 'north'
+        if direction.y > 0:
+            return 'up'
+        if direction.y < 0:
+            return 'down'
+        return None
 
 
 if __name__ == '__main__':
