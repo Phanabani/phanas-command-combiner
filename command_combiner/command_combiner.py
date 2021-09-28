@@ -49,24 +49,24 @@ class NBTUtils:
         while tags:
             window_addend = len(tags)
             window = window_addend
-            slice_ = slice(window)
+            best_window = 0
             while window_addend > 0 and window <= len(tags):
                 # This algorithm is inspired by binary search
                 # It basically finds the largest window over tags which
                 # starts at 0 and contains the longest encoded NBT string
                 # which is less than the command block character limit
-                slice_ = slice(window)
-                encoded_len = len(encoder.encode(tags[slice_]))
+                encoded_len = len(encoder.encode(tags[:window]))
 
                 window_addend //= 2
                 if encoded_len + init_len <= COMMAND_BLOCK_TEXT_LIMIT:
+                    best_window = window
                     window += window_addend
                 else:
                     window -= window_addend
 
-            yield tags[slice_]
+            yield tags[:best_window]
             # Remove this slice and continue slicing if anything is left
-            del tags[slice_]
+            del tags[:best_window]
 
 
 class CommandCombiner:
