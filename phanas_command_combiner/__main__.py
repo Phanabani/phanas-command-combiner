@@ -1,6 +1,6 @@
+import argparse
 from pathlib import Path
 import re
-import sys
 
 from . import CommandCombiner, Vector3
 
@@ -11,11 +11,24 @@ command_pattern = re.compile(
 
 
 def main():
-    if len(sys.argv) != 3:
-        return
+    parser = argparse.ArgumentParser(
+        prog="python -m phanas_command_combiner",
+        description="Generate commands for an armor stand clock with rotating "
+                    "hands."
+    )
+    parser.add_argument(
+        'commands_file', type=Path,
+        help="File to read commands from"
+    )
+    parser.add_argument(
+        'output_file', type=Path,
+        help="File to write generated combined commands to"
+    )
 
-    commands_file = Path(sys.argv[1])
-    out_file = Path(sys.argv[2])
+    args = parser.parse_args()
+    commands_file: Path = args.commands_file
+    output_file: Path = args.output_file
+
     if not commands_file.exists():
         return
 
@@ -27,7 +40,7 @@ def main():
                 cmds.append(match['command'])
 
     combiner = CommandCombiner(cmds, Vector3(8, -1, 8))
-    with out_file.open('wt') as f:
+    with output_file.open('wt') as f:
         for combined in combiner.combine():
             f.write(combined)
             f.write('\n')
