@@ -43,9 +43,13 @@ class NBTUtils:
 
     @staticmethod
     def slice_by_length(
-            tags: list, encoder: NBTEncoder, init_len: int = 0
+            tags: list[dict], encoder: NBTEncoder, init_len: int = 0,
+            post_commands: Optional[list[dict]] = None
     ) -> Generator[int]:
         tags = list(tags)  # make copy
+        if post_commands is not None:
+            init_len += len(encoder.encode(post_commands))
+
         while tags:
             window_addend = len(tags)
             window = window_addend
@@ -64,7 +68,7 @@ class NBTUtils:
                 else:
                     window -= window_addend
 
-            yield tags[:best_window]
+            yield [*tags[:best_window], *post_commands]
             # Remove this slice and continue slicing if anything is left
             del tags[:best_window]
 
@@ -104,15 +108,24 @@ class CommandCombiner:
                 len(summon_cmd) + len(self.nbt_encoder.encode(falling_blocks[0])) - 2
         )
 
-        commands = self.place_command_blocks()
-        commands.extend(self.format_commands())
-        commands.append('setblock ~ ~-2 ~ command_block{auto:1b,Command:"fill ~ ~ ~ ~ ~2 ~ air"}')
-        commands.append('kill @e[type=falling_block,distance=..1]')
-        commands.append('kill @e[type=command_block_minecart,distance=..1]')
-        minecarts = [NBTUtils.cmd_minecart(repr(cmd)) for cmd in commands]
+        place_cmd_blocks = self.place_command_blocks()
+        main_commands = self.format_commands()
+        cleanup_cmds = [
+            'setblock ~ ~-2 ~ command_block{auto:1b,Command:"fill ~ ~ ~ ~ ~2 ~ air"}',
+            'kill @e[type=falling_block,distance=..1]',
+            'kill @e[type=command_block_minecart,distance=..1]'
+        ]
+        commands = [
+            *place_cmd_blocks, *main_commands
+        ]
+        commands_minecarts = [NBTUtils.cmd_minecart(repr(cmd)) for cmd in commands]
+        cleanup_minecarts = [NBTUtils.cmd_minecart(repr(cmd)) for cmd in cleanup_cmds]
 
         for minecarts_slice in (
-                NBTUtils.slice_by_length(minecarts, self.nbt_encoder, init_len)
+                NBTUtils.slice_by_length(
+                    commands_minecarts, self.nbt_encoder, init_len,
+                    post_commands=cleanup_minecarts
+                )
         ):
             falling_blocks[-1]['Passengers'] = minecarts_slice
             tag = self.nbt_encoder.encode(falling_blocks[0])
