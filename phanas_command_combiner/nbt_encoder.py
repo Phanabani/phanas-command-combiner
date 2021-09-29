@@ -1,7 +1,10 @@
 from abc import ABCMeta, abstractmethod
+import json
+from typing import Union
 
 __all__ = [
-    'NBTNode', 'RawNBT', 'NBTEncoder'
+    'NBTNode', 'RawNBT', 'JsonComponent',
+    'NBTEncoder'
 ]
 
 
@@ -19,6 +22,24 @@ class RawNBT(NBTNode):
 
     def encode(self):
         return self.text
+
+
+class JsonComponent(NBTNode):
+
+    def __init__(self, json_: Union[str, list, dict], as_str = True):
+        """
+        A JSON chat component
+        :param json_: the json structure
+        :param as_str: whether this field should be encoded as a string
+        """
+        self.json = json_
+        self.as_str = as_str
+
+    def encode(self):
+        dump = json.dumps(self.json)
+        if self.as_str:
+            return repr(dump)
+        return dump
 
 
 class NBTEncoder:
