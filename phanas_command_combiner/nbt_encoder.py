@@ -140,6 +140,9 @@ class NBTEncoder:
         )
 
     def encode_dict(self, obj: dict) -> str:
+        if not obj:
+            return '{}'
+
         items = ['{']
         for k, v in obj.items():
             items.extend([k, ':', self.encode(v), ','])
@@ -147,6 +150,9 @@ class NBTEncoder:
         return ''.join(items)
 
     def encode_list(self, obj: list) -> str:
+        if not obj:
+            return '[]'
+
         items = ['[']
         for i in obj:
             items.extend([self.encode(i), ','])
