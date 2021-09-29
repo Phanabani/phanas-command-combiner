@@ -3,7 +3,10 @@ import json
 from typing import Union
 
 __all__ = [
-    'NBTNode', 'RawNBT', 'JsonComponent',
+    'NBTNode', 'RawNBT',
+    'IntegralNode', 'Byte', 'Short', 'Int', 'Long',
+    'DecimalNode', 'Float', 'Double',
+    'JsonComponent',
     'NBTEncoder'
 ]
 
@@ -22,6 +25,65 @@ class RawNBT(NBTNode):
 
     def encode(self):
         return self.text
+
+
+class IntegralNode(NBTNode, metaclass=ABCMeta):
+    min = 0
+    max = 0
+    suffix = ''
+
+    def __init__(self, value: int):
+        if value < self.min or value > self.max:
+            raise ValueError(
+                f"{self.__class__.__name__} must be between {self.min} and "
+                f"{self.max} (inclusive), got {value}"
+            )
+        self.value = value
+
+    def encode(self):
+        return f'{self.value}{self.suffix}'
+
+
+class Byte(IntegralNode):
+    min = -(1 << 7)
+    max = (1 << 7) - 1
+    suffix = 'b'
+
+
+class Short(IntegralNode):
+    min = -(1 << 15)
+    max = (1 << 15) - 1
+    suffix = 's'
+
+
+class Int(IntegralNode):
+    min = -(1 << 31)
+    max = (1 << 31) - 1
+
+
+class Long(IntegralNode):
+    min = -(1 << 63)
+    max = (1 << 63) - 1
+    suffix = 'L'
+
+
+class DecimalNode(NBTNode, metaclass=ABCMeta):
+    suffix = ''
+
+    def __init__(self, value: float, precision: int = 6):
+        self.value = value
+        self.precision = precision
+
+    def encode(self):
+        return f'{self.value:.6f}{self.suffix}'
+
+
+class Float(DecimalNode):
+    suffix = 'f'
+
+
+class Double(DecimalNode):
+    pass
 
 
 class JsonComponent(NBTNode):
