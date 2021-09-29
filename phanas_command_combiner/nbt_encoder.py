@@ -159,10 +159,10 @@ class NBTEncoder:
         return obj
 
     def encode_float(self, obj: float) -> str:
-        return f'{obj:.6}'
+        return Float(obj).encode()
 
     def encode_int(self, obj: int) -> str:
-        return str(obj)
+        return Int(obj).encode()
 
     def encode_bool(self, obj: bool) -> str:
         return str(obj).lower()
