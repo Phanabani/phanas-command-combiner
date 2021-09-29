@@ -82,6 +82,9 @@ class CommandCombiner:
         self.dimensions = dimensions
 
     def combine(self) -> Generator[str]:
+        if not self.commands:
+            return
+
         summon_cmd = 'summon falling_block ~ ~1 ~ '
 
         # This is soooo weird right? The old method of just stacking the blocks
