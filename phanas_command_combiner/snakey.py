@@ -45,9 +45,7 @@ class Snakey:
     def __init__(self, dimensions: Vector3, volume_target: Optional[int] = None):
         dimensions = copy(dimensions)
         if dimensions.y == -1 and volume_target is not None:
-            dimensions.y = (
-                ceil(volume_target / ((dimensions.x + 1) * (dimensions.z + 1)))
-            )
+            dimensions.y = ceil(volume_target / (dimensions.x * dimensions.z))
         self._dimensions = dimensions
         self._index = 0
         self._pos = Vector3()
