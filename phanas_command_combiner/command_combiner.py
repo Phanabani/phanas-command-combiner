@@ -73,13 +73,28 @@ class CommandCombiner:
     origin = Vector3(1, -3, 1)
 
     def __init__(
-            self, commands: list[str], dimensions: Optional[Vector3] = None
+            self, commands: list[str], dimensions: Optional[Vector3] = None,
+            run_once: bool = False
     ):
+        """
+        Combine Minecraft commands into fewer long commands. This uses stacked
+        command block minecarts to generate a region of chain command blocks
+        with `commands` inside them. Use `run_once` to skip chain command block
+        generation and run `commands` straight from the minecarts.
+
+        :param commands: a list of commands to combine
+        :param dimensions: the dimensions of the output command blocks. Set Y
+            to -1 to automatically set the height based on the number of
+            commands
+        :param run_once: if true, don't create and command blocks and instead
+            run the commands straight from the command block minecarts
+        """
         self.commands = commands
         self.nbt_encoder = NBTEncoder(quote_strings=False)
         if dimensions is None:
             dimensions = Vector3(8, -1, 8)
         self.dimensions = dimensions
+        self.run_once = run_once
 
     def combine(self) -> Generator[str]:
         if not self.commands:
@@ -149,6 +164,9 @@ class CommandCombiner:
             yield f"{summon_cmd}{tag}"
 
     def place_command_blocks(self) -> list[str]:
+        if self.run_once:
+            return []
+
         commands = []
         snakey = Snakey(self.dimensions, len(self.commands))
         # We leave the y axis unbounded and Snakey calculates it
@@ -204,6 +222,9 @@ class CommandCombiner:
         return commands
 
     def format_commands(self) -> list[str]:
+        if self.run_once:
+            return self.commands
+
         snakey = Snakey(self.dimensions, len(self.commands))
         commands = []
         for pos_and_facing, cmd in zip(snakey, self.commands):

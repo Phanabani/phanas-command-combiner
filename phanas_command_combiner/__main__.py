@@ -24,10 +24,18 @@ def main():
         'output_file', type=Path,
         help="File to write generated combined commands to"
     )
+    parser.add_argument(
+        '--run-once', required=False, action='store_true',
+        help=(
+            "Run the commands immediately from the command block minecarts, "
+            "rather than writing the commands to command blocks"
+        )
+    )
 
     args = parser.parse_args()
     commands_file: Path = args.commands_file
     output_file: Path = args.output_file
+    run_once: bool = args.run_once
 
     if not commands_file.exists():
         return
@@ -39,7 +47,7 @@ def main():
             if match:
                 cmds.append(match['command'])
 
-    combiner = CommandCombiner(cmds, Vector3(8, -1, 8))
+    combiner = CommandCombiner(cmds, Vector3(8, -1, 8), run_once=run_once)
     with output_file.open('wt') as f:
         for combined in combiner.combine():
             f.write(combined)
