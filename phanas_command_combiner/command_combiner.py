@@ -33,6 +33,10 @@ class NBTUtils:
 
     @staticmethod
     def stack(entities: list[dict]) -> NoReturn:
+        if len(entities) < 2:
+            # Nothing to stack
+            return
+
         for i in range(len(entities) - 1):
             entities[i]['Passengers'] = [entities[i + 1]]
 
@@ -74,7 +78,7 @@ class CommandCombiner:
 
     def __init__(
             self, commands: list[str], dimensions: Optional[Vector3] = None,
-            run_once: bool = False
+            run_once: bool = False, support_blocks: bool = True
     ):
         """
         Combine Minecraft commands into fewer long commands. This uses stacked
@@ -88,6 +92,9 @@ class CommandCombiner:
             commands
         :param run_once: if true, don't create and command blocks and instead
             run the commands straight from the command block minecarts
+        :param support_blocks: generate support blocks (stone, redstone block,
+            activator rail) under the minecarts. Set to false if you already
+            have these blocks set up.
         """
         self.commands = commands
         self.nbt_encoder = NBTEncoder(quote_strings=False)
@@ -95,12 +102,49 @@ class CommandCombiner:
             dimensions = Vector3(8, -1, 8)
         self.dimensions = dimensions
         self.run_once = run_once
+        self.support_blocks = support_blocks
 
     def combine(self) -> Generator[str]:
         if not self.commands:
             return
 
-        summon_cmd = 'summon falling_block ~ ~1 ~ '
+        if self.support_blocks:
+            summon_offset = 1
+        else:
+            summon_offset = 3
+        summon_cmd = f'summon falling_block ~ ~{summon_offset} ~ '
+
+        support_blocks = self.get_support_blocks()
+        NBTUtils.stack(support_blocks)
+
+        support_blocks[-1]['Passengers'] = []
+        init_len = (
+                # Skip length of the empty brackets
+                len(summon_cmd) + len(self.nbt_encoder.encode(support_blocks[0])) - 2
+        )
+
+        place_cmd_blocks = self.place_command_blocks()
+        main_commands = self.format_commands()
+        cleanup_cmds = self.cleanup_commands()
+        commands = [
+            *place_cmd_blocks, *main_commands
+        ]
+        commands_minecarts = [NBTUtils.cmd_minecart(repr(cmd)) for cmd in commands]
+        cleanup_minecarts = [NBTUtils.cmd_minecart(repr(cmd)) for cmd in cleanup_cmds]
+
+        for minecarts_slice in (
+                NBTUtils.slice_by_length(
+                    commands_minecarts, self.nbt_encoder, init_len,
+                    post_commands=cleanup_minecarts
+                )
+        ):
+            support_blocks[-1]['Passengers'] = minecarts_slice
+            tag = self.nbt_encoder.encode(support_blocks[0])
+            yield f"{summon_cmd}{tag}"
+
+    def get_support_blocks(self):
+        if not self.support_blocks:
+            return [NBTUtils.falling_block('fire', with_id=False)]
 
         # This is soooo weird right? The old method of just stacking the blocks
         # directly on top of each other doesn't seem to work anymore in 1.17.
@@ -120,7 +164,7 @@ class CommandCombiner:
         # fires apparently DOES place after the other commands run and the
         # setup is deleted. I know it looks insane... but also kind of
         # captivating visually!!
-        falling_blocks = [
+        return [
             NBTUtils.falling_block('stone', with_id=False),
             NBTUtils.falling_block('fire'),
             NBTUtils.falling_block('fire'),
@@ -131,37 +175,6 @@ class CommandCombiner:
             NBTUtils.falling_block('fire'),
             NBTUtils.falling_block('activator_rail'),
         ]
-        NBTUtils.stack(falling_blocks)
-
-        falling_blocks[-1]['Passengers'] = []
-        init_len = (
-                # Skip length of the empty brackets
-                len(summon_cmd) + len(self.nbt_encoder.encode(falling_blocks[0])) - 2
-        )
-
-        place_cmd_blocks = self.place_command_blocks()
-        main_commands = self.format_commands()
-        cleanup_cmds = [
-            'data modify block ~ ~-3 ~ Command set value ""',
-            'setblock ~ ~-2 ~ command_block{auto:1b,Command:"fill ~ ~ ~ ~ ~2 ~ air"}',
-            'kill @e[type=falling_block,distance=..1]',
-            'kill @e[type=command_block_minecart,distance=..1]'
-        ]
-        commands = [
-            *place_cmd_blocks, *main_commands
-        ]
-        commands_minecarts = [NBTUtils.cmd_minecart(repr(cmd)) for cmd in commands]
-        cleanup_minecarts = [NBTUtils.cmd_minecart(repr(cmd)) for cmd in cleanup_cmds]
-
-        for minecarts_slice in (
-                NBTUtils.slice_by_length(
-                    commands_minecarts, self.nbt_encoder, init_len,
-                    post_commands=cleanup_minecarts
-                )
-        ):
-            falling_blocks[-1]['Passengers'] = minecarts_slice
-            tag = self.nbt_encoder.encode(falling_blocks[0])
-            yield f"{summon_cmd}{tag}"
 
     def place_command_blocks(self) -> list[str]:
         if self.run_once:
@@ -236,3 +249,15 @@ class CommandCombiner:
                 f"Command set value {cmd!r}"
             )
         return commands
+
+    def cleanup_commands(self) -> list[str]:
+        cmds = [
+            'data modify block ~ ~-3 ~ Command set value ""'
+        ]
+        if self.support_blocks:
+            cmds.extend([
+                'setblock ~ ~-2 ~ command_block{auto:1b,Command:"fill ~ ~ ~ ~ ~2 ~ air"}',
+                'kill @e[type=falling_block,distance=..1]',
+            ])
+        cmds.append('kill @e[type=command_block_minecart,distance=..1]')
+        return cmds
